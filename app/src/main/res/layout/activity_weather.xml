@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorPrimary"
+    tools:context="com.yangqi.myweather.WeatherActivity">
+
+    <ImageView
+        android:id="@+id/iv_bingImg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop" />
+
+    <android.support.v4.widget.DrawerLayout
+        android:id="@+id/dl_drawer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <android.support.v4.widget.SwipeRefreshLayout
+            android:id="@+id/srl_refresh"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fitsSystemWindows="true">
+
+            <ScrollView
+                android:id="@+id/sv_weather"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:overScrollMode="never"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <include layout="@layout/layout_title" />
+
+                    <include layout="@layout/layout_now" />
+
+                    <include layout="@layout/layout_forecast" />
+
+                    <include layout="@layout/layout_aqi" />
+
+                    <include layout="@layout/layout_suggestion" />
+
+                </LinearLayout>
+
+            </ScrollView>
+
+        </android.support.v4.widget.SwipeRefreshLayout>
+
+        <fragment
+            android:id="@+id/fragment_choose_area"
+            android:name="com.yangqi.myweather.ChooseAreaFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="start"
+            tools:layout="@layout/fragment_choose_area" />
+
+    </android.support.v4.widget.DrawerLayout>
+
+</FrameLayout>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.yangqi.myweather.MainActivity">
+
+    <fragment
+        android:id="@+id/fragment_choose_area"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:name="com.yangqi.myweather.ChooseAreaFragment"
+        tools:layout="@layout/fragment_choose_area" />
+
+</LinearLayout>

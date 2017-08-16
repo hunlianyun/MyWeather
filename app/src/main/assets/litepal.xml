@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<litepal>
+    <dbname value="weather" />
+    <version value="1" />
+
+    <list>
+        <mapping class="com.yangqi.db.Province" />
+        <mapping class="com.yangqi.db.City" />
+        <mapping class="com.yangqi.db.County" />
+    </list>
+</litepal>
