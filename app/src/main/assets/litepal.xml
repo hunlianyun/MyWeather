@@ -7,5 +7,6 @@
         <mapping class="com.yangqi.db.Province" />
         <mapping class="com.yangqi.db.City" />
         <mapping class="com.yangqi.db.County" />
+        <mapping class="com.yangqi.db.WeatherInfo" />
     </list>
 </litepal>

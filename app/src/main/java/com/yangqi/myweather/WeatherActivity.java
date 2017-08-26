@@ -1,14 +1,19 @@
 package com.yangqi.myweather;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -18,24 +23,24 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.Key;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
-import com.bumptech.glide.signature.EmptySignature;
 import com.bumptech.glide.signature.MediaStoreSignature;
+import com.yangqi.db.WeatherInfo;
 import com.yangqi.gson.Forecast;
 import com.yangqi.gson.Weather;
 import com.yangqi.utils.HttpUtil;
 import com.yangqi.utils.Utility;
 
+import org.litepal.crud.DataSupport;
+
 import java.io.IOException;
-import java.security.MessageDigest;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
-import java.util.Random;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -57,10 +62,11 @@ public class WeatherActivity extends AppCompatActivity {
     private SharedPreferences sp;
     private ImageView iv_bingImg;
     private Button bt_drawer;
-    public SwipeRefreshLayout srl_refresh;
-    public DrawerLayout dl_drawer;
+    private SwipeRefreshLayout srl_refresh;
+    private DrawerLayout dl_drawer;
 
-    public String mWeatherId;
+    private String mWeatherId;
+    private NavigationView nv_menu;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,15 +83,97 @@ public class WeatherActivity extends AppCompatActivity {
 
         initUI();
         initData();
+        initListener();
     }
 
     /**
-     * 初始化天气数据
+     * 初始化数据
      */
     private void initData() {
+        initBackground();
+        initWeather();
+        initDrawerCityMenu();
+    }
 
-        sp = PreferenceManager.getDefaultSharedPreferences(this);
+    /**
+     * 为个控件添加监听事件
+     */
+    private void initListener() {
+        bt_drawer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dl_drawer.openDrawer(GravityCompat.START);
+            }
+        });
 
+        srl_refresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                requestWeather();
+            }
+        });
+
+        nv_menu.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                // TODO 菜单点击事件
+                switch (item.getItemId()) {
+                    case R.id.item_setting:
+                        break;
+                    case R.id.item_feedback:
+                        break;
+                    case R.id.item_clear_cache:
+                        break;
+                    case R.id.item_about:
+                        break;
+                    default:
+                        break;
+                }
+                return false;
+            }
+        });
+    }
+
+    /**
+     * 动态添加左侧滑动菜单城市子菜单
+     */
+    private void initDrawerCityMenu() {
+        // 通过数据库获得天气 WeatherInfo 对象 List，遍历生成菜单项
+        SubMenu subMenu = nv_menu.getMenu().getItem(0).getSubMenu();
+        subMenu.clear();
+        List<WeatherInfo> all = DataSupport.findAll(WeatherInfo.class);
+        for (WeatherInfo weatherInfo : all) {
+            MenuItem item = subMenu.add(weatherInfo.getCityName()).setIcon(R.drawable.city);
+            Intent intent = new Intent(this, WeatherActivity.class);
+            intent.putExtra("weather_id", weatherInfo.getWeatherId());
+            item.setIntent(intent);
+        }
+        MenuItem cityManage = subMenu.add("添加/删除城市").setIcon(R.drawable.manage_city);
+        Intent intent = new Intent(this, CityManagerActivity.class);
+        cityManage.setIntent(intent);
+    }
+
+    /**
+     * 初始化天气信息
+     */
+    private void initWeather() {
+        mWeatherId = getIntent().getStringExtra("weather_id");
+        sp.edit().putString("weather_id", mWeatherId).apply();
+        //天气信息缓存有直接拿过来，没有则去网络加载
+        WeatherInfo weatherInfo = DataSupport.where("weatherId = ?", mWeatherId).findFirst(WeatherInfo.class);
+        if (weatherInfo == null || weatherInfo.getContent() == null) {
+            sv_weather.setVisibility(View.INVISIBLE);
+            requestWeather();
+        } else {
+            Weather weather = Utility.handleWeatherResponse(weatherInfo.getContent());
+            showWeather(weather);
+        }
+    }
+
+    /**
+     * 加载背景图
+     */
+    private void initBackground() {
         //加载 bing 搜索每日一图作为背景
         RequestOptions options = new RequestOptions();
         options.signature(new MediaStoreSignature("", sp.getLong("oldTime", 0), 0));
@@ -113,46 +201,14 @@ public class WeatherActivity extends AppCompatActivity {
                     .transition(DrawableTransitionOptions.withCrossFade())
                     .into(iv_bingImg);
         }
-
-        //天气信息缓存有直接拿过来，没有则去网络加载
-        String weatherStr = sp.getString("weather", null);
-        if (weatherStr == null) {
-            mWeatherId = getIntent().getStringExtra("weather_id");
-            sv_weather.setVisibility(View.INVISIBLE);
-            requestWeather(mWeatherId);
-        } else {
-            Weather weather = Utility.handleWeatherResponse(weatherStr);
-            mWeatherId = weather.basic.weatherId;
-            showWeather(weather);
-        }
-
-        bt_drawer.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dl_drawer.openDrawer(GravityCompat.START);
-            }
-        });
-
-        srl_refresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                requestWeather(mWeatherId);
-            }
-        });
-
     }
 
     /**
      * 联网查询天气数据
-     *
-     * @param weather_id 要查询的天气 id
      */
-    public void requestWeather(final String weather_id) {
+    public void requestWeather() {
 
-        //https://free-api.heweather.com/v5/weather?city=yourcity&key=yourkey
-        /*String url = "http://guolin.tech/api/weather?cityId=" + weather_id +
-                "&key=6516ce048ddc48bc991ca3f1712fe74d";*/
-        String url = "https://free-api.heweather.com/v5/weather?city=" + weather_id +
+        String url = "https://free-api.heweather.com/v5/weather?city=" + mWeatherId +
                 "&key=6516ce048ddc48bc991ca3f1712fe74d";
 
         HttpUtil.sendOkHttpRequest(url, new Callback() {
@@ -177,10 +233,15 @@ public class WeatherActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         if (weather != null && "ok".equals(weather.status)) {
-                            SharedPreferences.Editor editor = sp.edit();
-                            editor.putString("weather", weatherResponse);
-                            editor.apply();
                             showWeather(weather);
+                            WeatherInfo weatherInfo = new WeatherInfo(weather.basic.weatherId, weatherResponse, weather.basic.cityName);
+                            if (DataSupport.where("weatherId = ?", mWeatherId).findFirst(WeatherInfo.class) != null) {
+                                weatherInfo.updateAll("weatherId = ?", mWeatherId);
+                            } else {
+                                weatherInfo.save();
+                            }
+                            // 请求完成后，需要更新城市管理条目
+                            initDrawerCityMenu();
                         } else {
                             Toast.makeText(WeatherActivity.this,
                                     "服务器维护中，请稍后再试！", Toast.LENGTH_SHORT).show();
@@ -190,6 +251,33 @@ public class WeatherActivity extends AppCompatActivity {
                 });
             }
         });
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        dl_drawer.closeDrawers();
+
+        sp.edit().putString("weather_id", intent.getStringExtra("weather_id")).apply();
+
+        initDrawerCityMenu();
+        initWeather();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (dl_drawer.isDrawerOpen(nv_menu)) {
+            dl_drawer.closeDrawers();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        dl_drawer.closeDrawers();
     }
 
     /**
@@ -243,9 +331,11 @@ public class WeatherActivity extends AppCompatActivity {
     }
 
     /**
-     * 初始化各个控件
+     * 初始化各个控件及成员变量
      */
     private void initUI() {
+
+        sp = PreferenceManager.getDefaultSharedPreferences(this);
 
         bt_drawer = (Button) findViewById(R.id.bt_drawer);
         dl_drawer = (DrawerLayout) findViewById(R.id.dl_drawer);
@@ -271,6 +361,8 @@ public class WeatherActivity extends AppCompatActivity {
 
         srl_refresh = (SwipeRefreshLayout) findViewById(R.id.srl_refresh);
         srl_refresh.setColorSchemeResources(R.color.colorPrimary);
+
+        nv_menu = (NavigationView) findViewById(R.id.nv_menu);
 
     }
 }

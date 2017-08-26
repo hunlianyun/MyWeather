@@ -13,10 +13,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        if (sp.getString("weather", null) == null) {
+        String weather_id = sp.getString("weather_id", "");
+        boolean isAddCity = getIntent().getBooleanExtra("isAddCity", false);
+        boolean isNoCity = getIntent().getBooleanExtra("isNoCity", false);
+        if (weather_id.equals("") || isAddCity || isNoCity) {
             setContentView(R.layout.activity_main);
         } else {
             Intent intent = new Intent(this, WeatherActivity.class);
+            intent.putExtra("weather_id", weather_id);
             startActivity(intent);
             finish();
         }

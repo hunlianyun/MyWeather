@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -51,13 +52,22 @@
 
         </android.support.v4.widget.SwipeRefreshLayout>
 
-        <fragment
+        <!--<fragment
             android:id="@+id/fragment_choose_area"
             android:name="com.yangqi.myweather.ChooseAreaFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="start"
-            tools:layout="@layout/fragment_choose_area" />
+            tools:layout="@layout/fragment_choose_area" />-->
+
+        <android.support.design.widget.NavigationView
+            android:id="@+id/nv_menu"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="start"
+            android:fitsSystemWindows="true"
+            app:menu="@menu/item_navigation_view"
+            app:headerLayout="@layout/layout_header" />
 
     </android.support.v4.widget.DrawerLayout>
 
